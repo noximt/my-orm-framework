@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.example.annotation.Id;
+import org.example.annotation.OneToOne;
 import org.example.annotation.Table;
 
 @Data
@@ -11,12 +12,6 @@ import org.example.annotation.Table;
 @NoArgsConstructor
 @Table(name = "users")
 public class User {
-
-    public static void main(String[] args) {
-        User user = new User();
-        String name = user.getClass().getDeclaredAnnotation(Table.class).name();
-        System.out.println(name);
-    }
 
     @Id
     private Integer id;
@@ -30,5 +25,9 @@ public class User {
         this.name = name;
         this.login = login;
         this.password = password;
+    }
+
+    public User(Integer id) {
+        this.id = id;
     }
 }

@@ -3,7 +3,7 @@ package org.example;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class UserMapper implements ResultSetMapper<User>{
+public class UserMapper implements ResultSetMapper<User> {
     @Override
     public User toObject(ResultSet resultSet) {
         try {
@@ -14,7 +14,7 @@ public class UserMapper implements ResultSetMapper<User>{
             user.setPassword(resultSet.getString(4));
             user.setAge(resultSet.getInt(5));
             return user;
-        } catch (SQLException e){
+        } catch (SQLException e) {
 
         }
         return null;

@@ -11,53 +11,37 @@ public class QueryGenerator {
     private static final String INSERT_PATTERN = "insert into %s";
     private static final String DELETE_PATTERN = "delete from %s where id = %d";
     private static final String UPDATE_PATTERN = "update %s set ";
-    private static final String SELECT_PATTERN = "select * from %s where id = %d";
+    private static final String SELECT_PATTERN = "select * from %s where %s = ";
     private static final String SELECT_PATTERN_WITHOUT_WHERE = "select * from %s";
 
-    public Queue<Query> generate(Object o, Method method) {
-        Queue<Query> queue = new LinkedList<>();
-        String sql = null;
-        switch (method){
-            case DELETE:
-                sql = generateDeleteSqlQuery(o);
-                break;
-            case INSERT:
-                sql = generateInsertSqlQuery(o);
-                break;
-            case UPDATE:
-                sql = generateUpdateSqlQuery(o);
-                break;
-            case SELECT:
-                sql = generateSelectSqlQuery(o);
-                break;
-            case SELECT_WITHOUT_WHERE:
-                sql = generateSelectSqlQueryWithoutWhere(o);
-                break;
+    private Query generate(String sql) {
+        return new Query(sql);
+    }
+
+    public Query generateSelectSqlQuery(Object o, boolean all, String columnName, Object value) {
+        if (all){
+            return generate(String.format(SELECT_PATTERN_WITHOUT_WHERE, o.getClass().getSimpleName().toLowerCase()));
         }
-        Query query = new Query(sql);
-        queue.add(query);
-        return queue;
+        Object[] arrayOfSimpleNameAndParameter = createArrayOfSimpleNameAndParameter(o, columnName, value);
+        StringBuilder stringBuilder = new StringBuilder(SELECT_PATTERN);
+        if (columnName.getClass().isAnnotationPresent(Id.class)){
+            stringBuilder.append("%s");
+        }else{
+            stringBuilder.append("'%s'");
+        }
+        return generate(String.format(stringBuilder.toString(), arrayOfSimpleNameAndParameter));
     }
 
-    private String generateSelectSqlQuery(Object o) {
-        Object[] arrayOfSimpleNameAndId = createArrayOfSimpleNameAndId(o);
-        return String.format(SELECT_PATTERN, arrayOfSimpleNameAndId);
-    }
-    private String generateSelectSqlQueryWithoutWhere(Object o){
-        String name = o.getClass().getDeclaredAnnotation(Table.class).name();
-        return String.format(SELECT_PATTERN_WITHOUT_WHERE, name);
-    }
-
-    private String generateInsertSqlQuery(Object o) {
+    public Query generateInsertSqlQuery(Object o) {
         String tableName = o.getClass().getDeclaredAnnotation(Table.class).name();
         Field[] declaredFields = o.getClass().getDeclaredFields();
         Map<String, Object> parameters = createParametersForInsert(declaredFields, o);
-        return buildSql(parameters, tableName);
+        return generate(buildSql(parameters, tableName));
     }
 
-    private String generateDeleteSqlQuery(Object o) {
+    public Query generateDeleteSqlQuery(Object o) {
         Object[] obj = createArrayOfSimpleNameAndId(o);
-        return String.format(DELETE_PATTERN, obj);
+        return generate(String.format(DELETE_PATTERN, obj));
     }
 
     private Object[] createArrayOfSimpleNameAndId(Object o) {
@@ -78,12 +62,21 @@ public class QueryGenerator {
         return obj;
     }
 
-    private String generateUpdateSqlQuery(Object o) {
+    private Object[] createArrayOfSimpleNameAndParameter(Object o, String columnName, Object value) {
+        String tableName = o.getClass().getDeclaredAnnotation(Table.class).name();
+        Object[] obj = new Object[3];
+        obj[0] = tableName;
+        obj[1] = columnName;
+        obj[2] = value;
+        return obj;
+    }
+
+    public Query generateUpdateSqlQuery(Object o) {
         Field[] declaredFields = o.getClass().getDeclaredFields();
         StringBuilder stringBuilder = new StringBuilder(UPDATE_PATTERN);
         generateStringWithSpecifications(declaredFields, stringBuilder, o);
         Object[] objects = createArrayOfParametersForSpecifications(o, declaredFields);
-        return String.format(stringBuilder.toString(),objects);
+        return generate(String.format(stringBuilder.toString(),objects));
     }
 
     private Object[] createArrayOfParametersForSpecifications(Object o, Field[] declaredFields) {
@@ -199,6 +192,5 @@ public class QueryGenerator {
         }
         return map;
     }
-
 
 }
